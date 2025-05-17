@@ -1,82 +1,159 @@
-let dotPos = 0;    // current position of the dot (0 to 1)
-let target = 1;    // fixed target position (1)
-let zoomBase = 1;  // base zoom level
-let fractionSteps = []; // array to hold fractions for display
+let prevPos, nextPos, pos, t;
+let step = 0;
+let dt = 0.05;
+let history = [];
+let fractions = [];
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(720, 1280);
+  textFont('monospace');
   frameRate(30);
-  dotPos = 0;
-  fractionSteps = [];
-  textAlign(CENTER, CENTER);
-  textFont('Segoe UI, Tahoma, Geneva, Verdana, sans-serif');
-  textSize(16);
+  prevPos = 0;
+  nextPos = 0.5;
+  pos = 0;
+  t = 0;
+  history.push(prevPos);
 }
 
 function draw() {
-  background(34);
+  background(0);
+  pos = lerp(prevPos, nextPos, t);
 
-  // Smoothly move dot halfway towards target every frame
-  dotPos += (target - dotPos) * 0.05;
+  drawMainLine();
+  drawDot();
+  drawFractions();
+  drawZoom();
+  drawGraph();
+  drawOverlay();
 
-  // Calculate zoom: more zoom as dotPos nears 1, but limited
-  let zoom = map(1 - dotPos, 0, 1, 50, 1);
-  zoom = constrain(zoom, 1, 50);
-
-  // Coordinates for line start and end (fixed length)
-  let lineStartX = width / 2 - 200;
-  let lineEndX = width / 2 + 200;
-  let lineY = height / 2;
-
-  // Draw base line
-  push();
-  translate(width / 2, height / 2);
-  scale(zoom);
-
-  stroke(200);
-  strokeWeight(2 / zoom);
-  line(-200, 0, 200, 0);
-
-  // Draw 0 and 1 labels
-  noStroke();
-  fill(200);
-  textSize(16 / zoom);
-  text("0", -200, 20 / zoom);
-  text("1", 200, 20 / zoom);
-
-  // Draw fractions from previous steps
-  fill(150, 180, 255);
-  noStroke();
-  for (let i = 0; i < fractionSteps.length; i++) {
-    let fracX = lerp(-200, 200, fractionSteps[i]);
-    text(fractionSteps[i].toFixed(3), fracX, -20 / zoom);
+  t += dt;
+  if (t >= 1) {
+    t = 0;
+    history.push(nextPos);
+    step++;
+    let n = Math.pow(2, step) - 1;
+    let d = Math.pow(2, step);
+    fractions.push({ value: nextPos, label: `${n}/${d}` });
+    prevPos = nextPos;
+    let rem = 1 - prevPos;
+    if (rem > 1e-10) nextPos = prevPos + rem / 2;
   }
+}
 
-  // Draw the moving dot
-  let dotX = lerp(-200, 200, dotPos);
-  fill(255, 100, 100);
+function drawMainLine() {
+  let x1 = 80, x2 = width - 80, y = 200;
+  stroke(255);
+  line(x1, y, x2, y);
+  fill(255);
   noStroke();
-  ellipse(dotX, 0, 12 / zoom, 12 / zoom);
+  textAlign(CENTER);
+  text("0", x1 - 10, y + 20);
+  text("1", x2 + 10, y + 20);
 
-  pop();
+  stroke(180);
+  for (let i = 0; i < history.length - 1; i++) {
+    let a = map(history[i], 0, 1, x1, x2);
+    let b = map(history[i + 1], 0, 1, x1, x2);
+    line(a, y, b, y);
+  }
+}
 
-  // Store fractions as the dot moves past them (approx every 30 frames)
-  if (frameCount % 30 === 0 && dotPos < 1) {
-    // Calculate next fraction for the step: 1 - 1/(2^steps)
-    let nextFraction = 1 - 1 / Math.pow(2, fractionSteps.length + 1);
-    // Avoid duplicates due to float precision
-    if (!fractionSteps.includes(nextFraction)) {
-      fractionSteps.push(nextFraction);
+function drawDot() {
+  let x = map(pos, 0, 1, 80, width - 80);
+  fill(0, 255, 0);
+  noStroke();
+  ellipse(x, 200, 20);
+}
+
+function drawFractions() {
+  fill(200);
+  noStroke();
+  textAlign(CENTER);
+  for (let f of fractions) {
+    let x = map(f.value, 0, 1, 80, width - 80);
+    text(f.label, x, 180);
+  }
+}
+
+function drawZoom() {
+  let zx = 110, zy = 330, zw = 500, zh = 160;
+  let zoomFactor = 3;
+  let rem = 1 - pos;
+  let minX = max(0, 1 - zoomFactor * rem);
+  let maxX = 1;
+  let centerY = zy + zh / 2;
+
+  stroke(255);
+  noFill();
+  rect(zx, zy, zw, zh);
+  fill(255);
+  noStroke();
+  textAlign(CENTER);
+  text("Dynamic Zoom", zx + zw / 2, zy - 10);
+  text(nf(minX, 1, 5), zx - 10, zy + zh + 15);
+  text("1", zx + zw + 10, zy + zh + 15);
+
+  stroke(150);
+  line(zx, centerY, zx + zw, centerY);
+
+  for (let f of fractions) {
+    if (f.value >= minX) {
+      let fx = map(f.value, minX, maxX, zx, zx + zw);
+      stroke(0, 255, 255);
+      line(fx, centerY - 5, fx, centerY + 5);
+      noStroke();
+      fill(180);
+      textAlign(CENTER);
+      text(f.label, fx, centerY + 20);
     }
   }
 
-  // Draw handle in bottom-right corner
-  fill(200, 150);
-  textSize(18);
-  textAlign(RIGHT, BOTTOM);
-  text("@matematikteozgurles", width - 15, height - 15);
+  if (pos >= minX) {
+    let dotX = map(pos, minX, maxX, zx, zx + zw);
+    fill(0, 255, 0);
+    noStroke();
+    ellipse(dotX, centerY, 14);
+  }
 }
 
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+function drawGraph() {
+  let gx = 80, gy = 550, gw = width - 160, gh = 160;
+  stroke(255);
+  noFill();
+  rect(gx, gy, gw, gh);
+  fill(255);
+  noStroke();
+  text("Position Over Time", gx + gw / 2, gy - 10);
+  text("0", gx - 15, gy + gh);
+  text("1", gx - 15, gy);
+
+  stroke(0, 255, 255);
+  noFill();
+  beginShape();
+  for (let i = 0; i < history.length; i++) {
+    let x = map(i, 0, history.length - 1, gx, gx + gw);
+    let y = map(history[i], 0, 1, gy + gh, gy);
+    vertex(x, y);
+  }
+  let x = map(history.length, 0, history.length, gx, gx + gw);
+  let y = map(pos, 0, 1, gy + gh, gy);
+  vertex(x, y);
+  endShape();
+}
+
+function drawOverlay() {
+  fill(255);
+  noStroke();
+  textAlign(CENTER);
+  textSize(24);
+  text("Zeno's Paradox", width / 2, 40);
+
+  textSize(16);
+  textAlign(LEFT);
+  text("Step: " + step, 30, 80);
+  text("pos = " + nf(pos, 1, 10), 30, 110);
+
+  textAlign(RIGHT);
+  textSize(18);
+  text("@matematikteozgurles", width - 20, height - 30);
 }
