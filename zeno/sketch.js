@@ -1,116 +1,146 @@
-let prevPos, nextPos, pos, t;
-let step = 0;
-let dt = 0.05;
-let history = [];
-let fractions = [];
+let previousPosition, targetPosition, currentPosition, progress;
+let stepCount = 0;
+let speed = 0.05;
+let positionHistory = [];
+let fractionLabels = [];
+
+let playPauseButton, restartButton, speedSlider;
+let isPaused = false;
+
+const colors = {
+  background: '#000000',
+  line: '#ffffff',
+  trail: '#888888',
+  dot: '#00ff00',
+  zoomDot: '#00ff00',
+  fraction: '#cccccc',
+  zoomFraction: '#00ffff',
+  graphLine: '#00ffff',
+  text: '#ffffff'
+};
 
 function setup() {
   createCanvas(720, 1280);
-  textFont('monospace');
   frameRate(30);
-  prevPos = 0;
-  nextPos = 0.5;
-  pos = 0;
-  t = 0;
-  history.push(prevPos);
+  textFont('monospace');
+  smooth();
+
+  previousPosition = 0;
+  targetPosition = 0.5;
+  currentPosition = 0;
+  progress = 0;
+  positionHistory.push(previousPosition);
+
+  createCustomUI();
 }
 
 function draw() {
-  background(0);
-  pos = lerp(prevPos, nextPos, t);
+  background(colors.background);
+  speed = speedSlider.value();
+
+  if (!isPaused) {
+    currentPosition = lerp(previousPosition, targetPosition, progress);
+    progress += speed;
+
+    if (progress >= 1) {
+      progress = 0;
+      positionHistory.push(targetPosition);
+      stepCount++;
+
+      let numerator = Math.pow(2, stepCount) - 1;
+      let denominator = Math.pow(2, stepCount);
+      fractionLabels.push({
+        value: targetPosition,
+        label: `${numerator}/${denominator}`
+      });
+
+      previousPosition = targetPosition;
+      let remaining = 1 - previousPosition;
+      if (remaining > 1e-10) {
+        targetPosition = previousPosition + remaining / 2;
+      }
+    }
+  }
 
   drawMainLine();
-  drawDot();
-  drawFractions();
-  drawZoom();
+  drawMovingDot();
+  drawFractionLabels();
+  drawZoomView();
   drawGraph();
-  drawOverlay();
-
-  t += dt;
-  if (t >= 1) {
-    t = 0;
-    history.push(nextPos);
-    step++;
-    let n = Math.pow(2, step) - 1;
-    let d = Math.pow(2, step);
-    fractions.push({ value: nextPos, label: `${n}/${d}` });
-    prevPos = nextPos;
-    let rem = 1 - prevPos;
-    if (rem > 1e-10) nextPos = prevPos + rem / 2;
-  }
+  drawOverlayText();
 }
 
 function drawMainLine() {
   let x1 = 80, x2 = width - 80, y = 200;
-  stroke(255);
+  stroke(colors.line);
   line(x1, y, x2, y);
-  fill(255);
+  fill(colors.text);
   noStroke();
   textAlign(CENTER);
   text("0", x1 - 10, y + 20);
   text("1", x2 + 10, y + 20);
 
-  stroke(180);
-  for (let i = 0; i < history.length - 1; i++) {
-    let a = map(history[i], 0, 1, x1, x2);
-    let b = map(history[i + 1], 0, 1, x1, x2);
+  stroke(colors.trail);
+  for (let i = 0; i < positionHistory.length - 1; i++) {
+    let a = map(positionHistory[i], 0, 1, x1, x2);
+    let b = map(positionHistory[i + 1], 0, 1, x1, x2);
     line(a, y, b, y);
   }
 }
 
-function drawDot() {
-  let x = map(pos, 0, 1, 80, width - 80);
-  fill(0, 255, 0);
+function drawMovingDot() {
+  let x = map(currentPosition, 0, 1, 80, width - 80);
+  fill(colors.dot);
   noStroke();
   ellipse(x, 200, 20);
 }
 
-function drawFractions() {
-  fill(200);
+function drawFractionLabels() {
+  fill(colors.fraction);
   noStroke();
   textAlign(CENTER);
-  for (let f of fractions) {
+  for (let f of fractionLabels) {
     let x = map(f.value, 0, 1, 80, width - 80);
     text(f.label, x, 180);
   }
 }
 
-function drawZoom() {
+function drawZoomView() {
   let zx = 110, zy = 330, zw = 500, zh = 160;
   let zoomFactor = 3;
-  let rem = 1 - pos;
-  let minX = max(0, 1 - zoomFactor * rem);
+  let remaining = 1 - currentPosition;
+  let minX = max(0, 1 - zoomFactor * remaining);
   let maxX = 1;
   let centerY = zy + zh / 2;
 
-  stroke(255);
+  stroke(colors.line);
   noFill();
   rect(zx, zy, zw, zh);
-  fill(255);
+  fill(colors.text);
   noStroke();
   textAlign(CENTER);
   text("Dynamic Zoom", zx + zw / 2, zy - 10);
   text(nf(minX, 1, 5), zx - 10, zy + zh + 15);
   text("1", zx + zw + 10, zy + zh + 15);
 
-  stroke(150);
+  stroke(colors.line + '55');
   line(zx, centerY, zx + zw, centerY);
 
-  for (let f of fractions) {
+  for (let f of fractionLabels) {
     if (f.value >= minX) {
       let fx = map(f.value, minX, maxX, zx, zx + zw);
-      stroke(0, 255, 255);
+      stroke(colors.zoomFraction);
       line(fx, centerY - 5, fx, centerY + 5);
       noStroke();
-      fill(180);
+      fill(colors.fraction);
       textAlign(CENTER);
       text(f.label, fx, centerY + 20);
     }
   }
 
-  if (pos >= minX) {
-    let dotX = map(pos, minX, maxX, zx, zx + zw);
-    fill(0, 255, 0);
+  if (currentPosition >= minX) {
+    let dotX = map(currentPosition, minX, maxX, zx, zx + zw);
+    fill(colors.zoomDot);
     noStroke();
     ellipse(dotX, centerY, 14);
   }
@@ -118,31 +148,31 @@ function drawZoom() {
 
 function drawGraph() {
   let gx = 80, gy = 550, gw = width - 160, gh = 160;
-  stroke(255);
+  stroke(colors.line);
   noFill();
   rect(gx, gy, gw, gh);
-  fill(255);
+  fill(colors.text);
   noStroke();
   text("Position Over Time", gx + gw / 2, gy - 10);
   text("0", gx - 15, gy + gh);
   text("1", gx - 15, gy);
 
-  stroke(0, 255, 255);
+  stroke(colors.graphLine);
   noFill();
   beginShape();
-  for (let i = 0; i < history.length; i++) {
-    let x = map(i, 0, history.length - 1, gx, gx + gw);
-    let y = map(history[i], 0, 1, gy + gh, gy);
+  for (let i = 0; i < positionHistory.length; i++) {
+    let x = map(i, 0, positionHistory.length - 1, gx, gx + gw);
+    let y = map(positionHistory[i], 0, 1, gy + gh, gy);
     vertex(x, y);
   }
-  let x = map(history.length, 0, history.length, gx, gx + gw);
-  let y = map(pos, 0, 1, gy + gh, gy);
+  let x = map(positionHistory.length, 0, positionHistory.length, gx, gx + gw);
+  let y = map(currentPosition, 0, 1, gy + gh, gy);
   vertex(x, y);
   endShape();
 }
 
-function drawOverlay() {
-  fill(255);
+function drawOverlayText() {
+  fill(colors.text);
   noStroke();
   textAlign(CENTER);
   textSize(24);
@@ -150,10 +180,52 @@ function drawOverlay() {
 
   textSize(16);
   textAlign(LEFT);
-  text("Step: " + step, 30, 80);
-  text("pos = " + nf(pos, 1, 10), 30, 110);
+  text("Step: " + stepCount, 30, 80);
+  text("pos = " + nf(currentPosition, 1, 10), 30, 110);
 
   textAlign(RIGHT);
   textSize(18);
-  text("@matematikteozgurles", width - 20, height - 30);
+  text("@matematikteozgurles", width - 20, height - 130);
+}
+
+function createCustomUI() {
+  // Play/Pause Button
+  playPauseButton = createButton('Pause');
+  playPauseButton.position(30, height - 80);
+  playPauseButton.mousePressed(() => {
+    isPaused = !isPaused;
+    playPauseButton.html(isPaused ? 'Play' : 'Pause');
+  });
+
+  // Restart Button
+  restartButton = createButton('Restart');
+  restartButton.position(140, height - 80);
+  restartButton.mousePressed(() => {
+    previousPosition = 0;
+    targetPosition = 0.5;
+    currentPosition = 0;
+    progress = 0;
+    stepCount = 0;
+    positionHistory = [previousPosition];
+    fractionLabels = [];
+  });
+
+  // Speed Slider
+  createSpan('Speed: ').style('color', colors.text).position(260, height - 83);
+  speedSlider = createSlider(0.001, 0.2, speed, 0.001);
+  speedSlider.position(320, height - 80);
+  speedSlider.style('width', '300px');
+
+  // Shared Button Styling
+  [playPauseButton, restartButton].forEach(btn => {
+    btn.style('background-color', '#1e1e1e');
+    btn.style('color', colors.text);
+    btn.style('border', '1px solid #444');
+    btn.style('padding', '10px 16px');
+    btn.style('border-radius', '10px');
+    btn.style('font-family', 'monospace');
+    btn.style('font-size', '16px');
+    btn.mouseOver(() => btn.style('background-color', '#333'));
+    btn.mouseOut(() => btn.style('background-color', '#1e1e1e'));
+  });
 }
