@@ -10,7 +10,7 @@ let drawing = [];
 
 let skipSlider;
 let skipLabel;
-let skip = 5; // lower = more detail, slower
+let skip = 10; // lower = more detail, slower
 
 function preload() {
   img = loadImage("ata.jpeg");
@@ -21,7 +21,7 @@ function setup() {
 
   img.loadPixels();
 
-  skipSlider = createSlider(1, 20, 5, 1);
+  skipSlider = createSlider(1, 20, 10, 1);
 
   skipSlider.position(10, img.height + 10);
 
