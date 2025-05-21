@@ -84,8 +84,9 @@ function draw() {
     let hue = map(theta, 0, maxTheta, 0, 360);
     points.push({ x, y, hue });
     theta += 0.02;
-  } else if (drawing) {
-    drawing = false;
+  } else if (drawing && theta > maxTheta) {
+  isPaused = true; // Pause when done
+  }
   }
 
   // Draw the rose with transformations
