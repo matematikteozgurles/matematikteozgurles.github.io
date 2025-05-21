@@ -3,6 +3,8 @@ let kLabel, aLabel;
 let fadeCheckbox, spinCheckbox, glowCheckbox;
 let pulseCheckbox, floatCheckbox;
 let fadeSelect;
+let pauseButton, resumeButton;
+let isPaused = true;
 let drawing = false;
 let theta = 0;
 let maxTheta;
@@ -14,6 +16,11 @@ function setup() {
   angleMode(RADIANS);
   colorMode(HSB, 360, 100, 100);
   background(0);
+  
+  pauseButton = createButton("Pause");
+  pauseButton.mousePressed(() => isPaused = true);
+  resumeButton = createButton("Resume");
+  resumeButton.mousePressed(() => isPaused = false);
 
   maxTheta = TWO_PI * 6;
 
@@ -69,8 +76,8 @@ function draw() {
     background(0);
   }
 
-  // Add new points
-  if (drawing && theta <= maxTheta) {
+  // Add new point
+  if (drawing && !isPaused && theta <= maxTheta) {
     let r = a * cos(k * theta);
     let x = r * cos(theta);
     let y = r * sin(theta);
