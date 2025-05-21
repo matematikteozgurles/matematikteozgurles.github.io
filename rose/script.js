@@ -87,7 +87,6 @@ function draw() {
   } else if (drawing && theta > maxTheta) {
   isPaused = true; // Pause when done
   }
-  }
 
   // Draw the rose with transformations
   push();
