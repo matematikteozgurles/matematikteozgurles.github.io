@@ -4,7 +4,7 @@ let fadeCheckbox, spinCheckbox, glowCheckbox;
 let pulseCheckbox, floatCheckbox;
 let fadeSelect;
 let pauseButton, resumeButton;
-let isPaused = true;
+let isPaused = false;
 let drawing = false;
 let theta = 0;
 let maxTheta;
