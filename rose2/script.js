@@ -6,6 +6,7 @@ let fadeCheckbox, spinCheckbox, glowCheckbox;
 let pulseCheckbox, floatCheckbox, fadeSelect;
 let pauseButton, resumeButton, clearButton, restartButton;
 let speedSlider, speedLabel;
+let reelsModeCheckbox;
 
 function setup() {
   createCanvas(900, 600);
@@ -14,7 +15,9 @@ function setup() {
   maxTheta = TWO_PI * 6;
   background(0);
 
-  // Controls
+  reelsModeCheckbox = createCheckbox("Instagram Reels Mode", false);
+  reelsModeCheckbox.changed(toggleReelsMode);
+
   createP("Number of Roses:");
   let roseCountSlider = createSlider(1, 6, 3, 1);
   roseCountSlider.input(() => createPetals(roseCountSlider.value()));
@@ -59,6 +62,52 @@ function setup() {
   floatCheckbox = createCheckbox("Float Formula", false);
 
   drawing = true;
+}
+
+function toggleReelsMode() {
+  if (reelsModeCheckbox.checked()) {
+    resizeCanvas(900, 1600);
+    hideUI();
+    background(0);
+  } else {
+    resizeCanvas(900, 600);
+    showUI();
+    background(0);
+  }
+}
+
+function hideUI() {
+  pauseButton.hide();
+  resumeButton.hide();
+  restartButton.hide();
+  clearButton.hide();
+  fadeCheckbox.hide();
+  fadeSelect.hide();
+  spinCheckbox.hide();
+  glowCheckbox.hide();
+  pulseCheckbox.hide();
+  floatCheckbox.hide();
+  speedSlider.hide();
+  speedLabel.hide();
+  selectAll('.sliderLabel').forEach(el => el.hide());
+  selectAll('.kSlider').forEach(el => el.hide());
+}
+
+function showUI() {
+  pauseButton.show();
+  resumeButton.show();
+  restartButton.show();
+  clearButton.show();
+  fadeCheckbox.show();
+  fadeSelect.show();
+  spinCheckbox.show();
+  glowCheckbox.show();
+  pulseCheckbox.show();
+  floatCheckbox.show();
+  speedSlider.show();
+  speedLabel.show();
+  selectAll('.sliderLabel').forEach(el => el.show());
+  selectAll('.kSlider').forEach(el => el.show());
 }
 
 function createPetals(count) {
