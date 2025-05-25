@@ -67,7 +67,7 @@ function setup() {
 function toggleReelsMode() {
   if (reelsModeCheckbox.checked()) {
     resizeCanvas(900, 1600);
-    hideUI();
+    showUI();
     background(0);
   } else {
     resizeCanvas(900, 600);
