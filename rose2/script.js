@@ -5,9 +5,14 @@ let drawing = false;
 let fadeCheckbox, spinCheckbox, glowCheckbox;
 let pulseCheckbox, floatCheckbox, fadeSelect;
 let pauseButton, resumeButton, clearButton, restartButton;
-let speedSlider, speedLabel, reelsModeCheckbox;
+let speedSlider, speedLabel;
+let reelsModeCheckbox;
 
 function setup() {
+  reelsModeCheckbox = createCheckbox("Instagram Reels Mode", false);
+  reelsModeCheckbox.changed(applyReelsMode);
+
+  pixelDensity(1); // Better for performance
   createCanvas(900, 600);
   angleMode(RADIANS);
   colorMode(HSB, 360, 100, 100);
@@ -57,22 +62,33 @@ function setup() {
   pulseCheckbox = createCheckbox("Pulse Formula", false);
   floatCheckbox = createCheckbox("Float Formula", false);
 
-  reelsModeCheckbox = createCheckbox("Instagram Reels Mode (900x1600)", false);
-  reelsModeCheckbox.changed(toggleReelsMode);
-
   drawing = true;
 }
 
-function toggleReelsMode() {
+function applyReelsMode() {
   if (reelsModeCheckbox.checked()) {
-    resizeCanvas(900, 1600);
-    if (petals.length > 3) createPetals(3); // Limit roses
-    glowCheckbox.checked(false);            // Disable glow for speed
-    maxTheta = TWO_PI * 3;                  // Shorter curves
+    pixelDensity(1);
+    resizeCanvas(720, 480);
+
+    // Disable heavy effects
+    glowCheckbox.checked(false);
+    spinCheckbox.checked(false);
+    pulseCheckbox.checked(false);
+    floatCheckbox.checked(false);
+
+    glowCheckbox.elt.disabled = true;
+    spinCheckbox.elt.disabled = true;
+    pulseCheckbox.elt.disabled = true;
+    floatCheckbox.elt.disabled = true;
   } else {
     resizeCanvas(900, 600);
-    maxTheta = TWO_PI * 6;
+
+    glowCheckbox.elt.disabled = false;
+    spinCheckbox.elt.disabled = false;
+    pulseCheckbox.elt.disabled = false;
+    floatCheckbox.elt.disabled = false;
   }
+
   background(0);
 }
 
@@ -136,10 +152,11 @@ function draw() {
 
     noFill();
     beginShape();
-    for (let pt of p.points) {
+    for (let j = 0; j < p.points.length; j += 2) { // skip every other point
+      let pt = p.points[j];
       if (glowCheckbox.checked()) {
-        stroke(pt.hue, 80, 100, 40); // Lower alpha for speed
-        strokeWeight(2);
+        stroke(pt.hue, 80, 100, 80);
+        strokeWeight(4);
         point(pt.x, pt.y);
         strokeWeight(1);
       }
@@ -156,15 +173,9 @@ function draw() {
 }
 
 function backgroundFade() {
-  let fadeAlpha = 1;
-
   if (fadeCheckbox.checked()) {
-    if (reelsModeCheckbox.checked()) {
-      fadeAlpha = 0.3; // Always fast in reels mode
-    } else {
-      let speed = fadeSelect.value();
-      fadeAlpha = speed === "Slow" ? 0.03 : speed === "Medium" ? 0.1 : 0.3;
-    }
+    let speed = fadeSelect.value();
+    let fadeAlpha = speed === "Slow" ? 0.03 : speed === "Medium" ? 0.1 : 0.3;
     background(0, fadeAlpha * 255);
   } else {
     background(0);
