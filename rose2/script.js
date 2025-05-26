@@ -12,8 +12,8 @@ function setup() {
   reelsModeCheckbox = createCheckbox("Instagram Reels Mode", false);
   reelsModeCheckbox.changed(applyReelsMode);
 
-  pixelDensity(1); // Better for performance
-  createCanvas(900, 600);
+  pixelDensity(1.5); // medium-high for phones
+  createCanvas(720,1280); // vertical HD canvas
   angleMode(RADIANS);
   colorMode(HSB, 360, 100, 100);
   maxTheta = TWO_PI * 6;
@@ -67,10 +67,9 @@ function setup() {
 
 function applyReelsMode() {
   if (reelsModeCheckbox.checked()) {
-    pixelDensity(1);
-    resizeCanvas(720, 480);
+    pixelDensity(1.5);
+    resizeCanvas(720, 1280);
 
-    // Disable heavy effects
     glowCheckbox.checked(false);
     spinCheckbox.checked(false);
     pulseCheckbox.checked(false);
@@ -82,7 +81,6 @@ function applyReelsMode() {
     floatCheckbox.elt.disabled = true;
   } else {
     resizeCanvas(900, 600);
-
     glowCheckbox.elt.disabled = false;
     spinCheckbox.elt.disabled = false;
     pulseCheckbox.elt.disabled = false;
@@ -123,7 +121,7 @@ function draw() {
   let step = speedSlider.value();
   speedLabel.html("Speed = " + step.toFixed(2));
 
-  let cols = 3;
+  let cols = 2;
   let spacingX = width / cols;
   let spacingY = height / ceil(petals.length / cols);
 
@@ -152,7 +150,7 @@ function draw() {
 
     noFill();
     beginShape();
-    for (let j = 0; j < p.points.length; j += 2) { // skip every other point
+    for (let j = 0; j < p.points.length; j += 2) {
       let pt = p.points[j];
       if (glowCheckbox.checked()) {
         stroke(pt.hue, 80, 100, 80);
@@ -190,7 +188,7 @@ function drawFormulaLabel(x, y, p) {
   translate(x, y + floatOffset);
   scale(pulse);
   textAlign(CENTER, CENTER);
-  textSize(14);
+  textSize(20);
   fill(255);
   noStroke();
   text(formula, 0, 0);
@@ -201,8 +199,8 @@ function drawSignature() {
   push();
   resetMatrix();
   textAlign(RIGHT, BOTTOM);
-  textSize(12);
+  textSize(18);
   fill(255, 100);
-  text("@matematikteozgurles", width - 10, height - 10);
+  text("@matematikteozgurles", width - 20, height - 20);
   pop();
 }
